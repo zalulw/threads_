@@ -171,6 +171,17 @@ function getMessagesForUser(userId: number) {
   return getMessagesForUserStatement.all({ userId });
 }
 
+const getAllMessagesStatement =
+  db.prepare(`SELECT m.id, m.sender_id AS senderId, m.recipient_id AS recipientId, m.content, m.created_at AS createdAt, m.parent_msg_id AS parentMsgId, m.is_read AS isRead, s.username AS senderUsername, r.username AS recipientUsername
+  FROM messages m
+  JOIN users s ON s.id = m.sender_id
+  JOIN users r ON r.id = m.recipient_id
+  ORDER BY m.created_at DESC`);
+
+function getAllMessages() {
+  return getAllMessagesStatement.all();
+}
+
 //#endregion Message Queries
 
 const getConversationStatement =
@@ -213,6 +224,7 @@ export {
   createMessage,
   getMessageById,
   getMessagesForUser,
+  getAllMessages,
   getConversation,
   getThread,
 };

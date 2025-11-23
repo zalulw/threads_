@@ -80,9 +80,14 @@ async function loadUsers() {
     const users = await response.json();
     const list = document.getElementById('users-list');
     list.innerHTML = users.map(user => `
-        <div class="user">
-            <p>${user.username} (${user.email})</p>
-            <button onclick="sendMessage(${user.id})">Send Message</button>
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">${user.username}</h5>
+                    <p class="card-text">${user.email}</p>
+                    <button class="btn btn-primary" onclick="sendMessage(${user.id})">Send Message</button>
+                </div>
+            </div>
         </div>
     `).join('');
 }
@@ -98,7 +103,7 @@ function sendMessage(recipientId) {
             },
             body: JSON.stringify({ recipient_id: recipientId, content })
         }).then(() => {
-            alert('Message sent');
+            window.location.href = 'messages.html';
         });
     }
 }
@@ -110,11 +115,16 @@ async function loadMessages() {
     const messages = await response.json();
     const list = document.getElementById('messages-list');
     list.innerHTML = messages.map(msg => `
-        <div class="message">
-            <p><strong>${msg.senderUsername}</strong>: ${msg.content}</p>
-            <p>${new Date(msg.createdAt).toLocaleString()}</p>
-            <button onclick="viewThread(${msg.id})">View Thread</button>
-            <button onclick="reply(${msg.id})">Reply</button>
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">${msg.senderUsername}</h5>
+                    <p class="card-text">${msg.content}</p>
+                    <p class="card-text"><small class="text-muted">${new Date(msg.createdAt).toLocaleString()}</small></p>
+                    <button class="btn btn-info me-2" onclick="viewThread(${msg.id})">View Thread</button>
+                    <button class="btn btn-success" onclick="reply(${msg.id})">Reply</button>
+                </div>
+            </div>
         </div>
     `).join('');
 }
@@ -123,16 +133,24 @@ function viewThread(messageId) {
     window.location.href = `thread.html?id=${messageId}`;
 }
 
-function reply(messageId) {
+async function reply(messageId) {
     const content = prompt('Enter reply:');
     if (content) {
+        // Fetch the original message to get the sender
+        const response = await fetch(`${API_BASE}/messages/thread/${messageId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const thread = await response.json();
+        const originalMessage = thread[0]; // First message in thread
+        const recipientId = originalMessage.senderId === parseInt(currentUserId) ? originalMessage.recipientId : originalMessage.senderId;
+
         fetch(`${API_BASE}/messages`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ recipient_id: 0, content, parent_id: messageId }) // adjust recipient
+            body: JSON.stringify({ recipient_id: recipientId, content, parent_id: messageId })
         }).then(() => {
             loadMessages();
         });
@@ -148,24 +166,37 @@ async function loadThread() {
     const thread = await response.json();
     const list = document.getElementById('thread-list');
     list.innerHTML = thread.map(msg => `
-        <div class="message">
-            <p><strong>${msg.senderUsername}</strong>: ${msg.content}</p>
-            <p>${new Date(msg.createdAt).toLocaleString()}</p>
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">${msg.senderUsername}</h5>
+                <p class="card-text">${msg.content}</p>
+                <p class="card-text"><small class="text-muted">${new Date(msg.createdAt).toLocaleString()}</small></p>
+            </div>
         </div>
     `).join('');
 }
 
-function sendReply() {
+async function sendReply() {
     const urlParams = new URLSearchParams(window.location.search);
     const id = urlParams.get('id');
     const content = document.getElementById('reply-content').value;
+    if (!content.trim()) return;
+
+    // Fetch the thread to determine recipient
+    const response = await fetch(`${API_BASE}/messages/thread/${id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const thread = await response.json();
+    const originalMessage = thread[0]; // First message in thread
+    const recipientId = originalMessage.senderId === parseInt(currentUserId) ? originalMessage.recipientId : originalMessage.senderId;
+
     fetch(`${API_BASE}/messages`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ recipient_id: 0, content, parent_id: parseInt(id) }) // adjust
+        body: JSON.stringify({ recipient_id: recipientId, content, parent_id: parseInt(id) })
     }).then(() => {
         loadThread();
         document.getElementById('reply-content').value = '';

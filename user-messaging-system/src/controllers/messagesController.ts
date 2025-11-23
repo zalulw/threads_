@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { createMessage, getMessagesForUser, getConversation, getThread } from "../db/db.js";
+import { createMessage, getMessagesForUser, getAllMessages, getConversation, getThread } from "../db/db.js";
 
 export const sendMessage = (req: Request, res: Response) => {
   try {
@@ -14,8 +14,7 @@ export const sendMessage = (req: Request, res: Response) => {
 
 export const getMessages = (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
-    const messages = getMessagesForUser(userId);
+    const messages = getAllMessages();
     res.json(messages);
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch messages" });

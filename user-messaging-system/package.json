@@ -22,5 +22,12 @@
     "better-sqlite3": "^12.4.6",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
-  }
+  },
+  "name": "user-messaging-system",
+  "version": "1.0.0",
+  "description": "A full-stack web application for user-to-user messaging with threaded conversations. Built with Node.js, Express, TypeScript, SQLite, and vanilla JavaScript.",
+  "main": "index.js",
+  "keywords": [],
+  "author": "Polyák Zalán",
+  "license": "ISC"
 }
